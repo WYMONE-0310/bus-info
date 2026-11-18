@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=512, initial-scale=1">
+<title>Bus Arrival Information</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body {
+    width:512px; height:400px;
+    overflow:hidden;
+  }
+  body {
+    margin:0 auto;
+    font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    background:#0b1a2b;
+    color:#fff;
+    display:flex; flex-direction:column;
+    user-select:none;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    flex:0 0 62px;
+    background:linear-gradient(90deg,#0f3d6e 0%,#1668b3 100%);
+    border-bottom:2px solid #2a9df4;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px;
+  }
+  .station { display:flex; align-items:baseline; gap:8px; }
+  .station .name { font-size:24px; font-weight:700; letter-spacing:.5px; }
+  .station .en { font-size:10px; color:#9fd0ff; letter-spacing:.5px; text-transform:uppercase; }
+  .clock { text-align:right; line-height:1.15; }
+  .clock .time {
+    font-size:24px; font-weight:700;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:1px;
+  }
+  .clock .date { font-size:10px; color:#9fd0ff; letter-spacing:.4px; text-transform:uppercase; }
+
+  /* ===== Route list ===== */
+  .list { flex:1; display:flex; flex-direction:column; min-height:0; }
+  .row {
+    flex:1;
+    display:flex; align-items:center;
+    gap:8px;
+    padding:0 12px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .row:last-child { border-bottom:none; }
+  .row:nth-child(odd) { background:rgba(255,255,255,.035); }
+
+  .route { flex:0 0 78px; display:flex; justify-content:center; }
+  .route .no {
+    font-size:19px; font-weight:800; line-height:1.25;
+    color:#fff; background:#1668b3;
+    border-radius:6px; padding:2px 8px;
+    text-align:center; white-space:nowrap;
+  }
+
+  .dest { flex:1; min-width:0; }
+  .dest .to {
+    font-size:15px; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .dest .sub {
+    font-size:10px; color:#8fb4d6; margin-top:4px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .eta { flex:0 0 104px; text-align:right; line-height:1.1; }
+  .eta .min {
+    font-size:26px; font-weight:800; color:#39d98a;
+    font-variant-numeric:tabular-nums;
+  }
+  .eta .min.soon   { color:#ffd23f; font-size:17px; }
+  .eta .min.arrive { color:#ff5d5d; font-size:17px; }
+  .eta .unit { font-size:11px; font-weight:600; color:#8fb4d6; margin-left:2px; }
+
+  /* ===== Ticker ===== */
+  .ticker {
+    flex:0 0 34px;
+    background:#06121f;
+    border-top:1px solid rgba(255,255,255,.08);
+    display:flex; align-items:center;
+    overflow:hidden;
+  }
+  .ticker span {
+    white-space:nowrap;
+    font-size:11px;
+    color:#9fd0ff;
+    letter-spacing:.3px;
+    animation:scroll 22s linear infinite;
+  }
+  @keyframes scroll {
+    from { transform:translateX(512px); }
+    to   { transform:translateX(-100%); }
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="station">
+      <div class="name">Science Park</div>
+      <div class="en">KEJIYUAN</div>
+    </div>
+    <div class="clock">
+      <div class="time" id="clockTime">08:30</div>
+      <div class="date" id="clockDate">NOV 18 WED</div>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="ticker">
+    <span id="tickerText">Arrival times are for reference only &middot; Boarding at Platform 1 &middot; Please queue in order, let passengers alight first &middot; Info hotline: 12328</span>
+  </div>
+
+<script>
+/* ========== Mock data (replace with live API) ========== */
+let routes = [
+  { no:"101",  to:"Railway Station",  sub:"Next stop: Civic Plaza",     eta:3 },
+  { no:"M203", to:"Nanshan Hospital", sub:"Bus arriving now",           eta:0 },
+  { no:"B686", to:"Shenzhen Bay Port", sub:"2 stops away",              eta:8 }
+];
+
+const listEl   = document.getElementById("list");
+const timeEl   = document.getElementById("clockTime");
+const dateEl   = document.getElementById("clockDate");
+const WEEK     = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+const MONTH    = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+/* ========== Render routes ========== */
+function render() {
+  listEl.innerHTML = routes.map(r => {
+    let cls = "", text = "", unit = "";
+    if (r.eta <= 0) {
+      cls = "arrive"; text = "Arriving";
+    } else if (r.eta <= 2) {
+      cls = "soon"; text = r.eta + " min";
+    } else {
+      text = r.eta; unit = '<span class="unit">min</span>';
+    }
+    return `
+      <div class="row">
+        <div class="route"><div class="no">${r.no}</div></div>
+        <div class="dest">
+          <div class="to">To ${r.to}</div>
+          <div class="sub">${r.sub}</div>
+        </div>
+        <div class="eta"><div class="min ${cls}">${text}${unit}</div></div>
+      </div>`;
+  }).join("");
+}
+
+/* ========== Clock ========== */
+function tickClock() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  timeEl.textContent = `${p(d.getHours())}:${p(d.getMinutes())}`;
+  dateEl.textContent = `${MONTH[d.getMonth()]} ${p(d.getDate())} ${WEEK[d.getDay()]}`;
+}
+
+/* ========== Countdown (mock: -1 min every 40s) ========== */
+function countdown() {
+  routes.forEach(r => {
+    if (r.eta > 0) r.eta -= 1;
+  });
+  render();
+}
+
+render();
+tickClock();
+setInterval(tickClock, 1000);
+setInterval(countdown, 40000);
+</script>
+</body>
+</html>
